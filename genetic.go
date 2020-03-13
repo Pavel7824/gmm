@@ -19,8 +19,9 @@ type GA struct {
 	parents       []*gpoints
 	childs        [][]*gpoints
 	candidates    []Candidate
-	mapping       map[interface{}]int64                   // link - ID (point)
-	dists         map[interface{}]map[interface{}]float64 // link - linc - dist (from - to points)
+	saveDists     bool
+	mapping       map[interface{}]int64                    // link - ID (point)
+	dists         map[interface{}]map[interface{}]*float64 // link - linc - dist (from - to points)
 }
 
 // SetRepeat ...
@@ -28,10 +29,16 @@ func (ga *GA) SetRepeat(r int) {
 	ga.repeat = r
 }
 
+// SaveDists ...
+func (ga *GA) SaveDists(save bool) {
+	ga.saveDists = save
+}
+
 // NewGA ...
 func NewGA(c []Candidate) (ga *GA, err error) {
 	ga = new(GA)
 	ga.repeat = 1000
+	ga.saveDists = false
 	ga.parents = make([]*gpoints, len(c))
 	ga.mapping = make(map[interface{}]int64, len(c))
 	ga.candidates = c
@@ -137,7 +144,27 @@ func (ga *GA) Run() []interface{} {
 func (ga *GA) calcDistParent(ind int) {
 	dist := 0.0
 	for i := 1; i < ga.parents[ind].count; i++ {
-		dist += ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+		if ga.saveDists {
+			d := 0.0
+			if l1 := ga.dists[ga.parents[ind].pts[i-1]]; l1 != nil {
+				if l2 := l1[ga.parents[ind].pts[i]]; l2 != nil {
+					d = *l2
+				} else {
+					l1 = make(map[interface{}]*float64)
+					d = ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+					ga.dists[ga.parents[ind].pts[i-1]][ga.parents[ind].pts[i]] = &d
+				}
+			} else {
+				ga.dists = make(map[interface{}]map[interface{}]*float64)
+				ga.dists[ga.parents[ind].pts[i-1]] = make(map[interface{}]*float64)
+				d = ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+				ga.dists[ga.parents[ind].pts[i-1]][ga.parents[ind].pts[i]] = &d
+			}
+			dist += d
+		} else {
+			dist += ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+		}
+
 	}
 	ga.parents[ind].dist = dist
 }
@@ -145,7 +172,26 @@ func (ga *GA) calcDistChild(ind int) {
 	for j := range ga.childs[ind] {
 		dist := 0.0
 		for i := 1; i < ga.childs[ind][j].count; i++ {
-			dist += ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+			if ga.saveDists {
+				d := 0.0
+				if l1 := ga.dists[ga.childs[ind][j].pts[i-1]]; l1 != nil {
+					if l2 := l1[ga.childs[ind][j].pts[i]]; l2 != nil {
+						d = *l2
+					} else {
+						l1 = make(map[interface{}]*float64)
+						d = ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+						ga.dists[ga.childs[ind][j].pts[i-1]][ga.childs[ind][j].pts[i]] = &d
+					}
+				} else {
+					ga.dists = make(map[interface{}]map[interface{}]*float64)
+					ga.dists[ga.childs[ind][j].pts[i-1]] = make(map[interface{}]*float64)
+					d = ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+					ga.dists[ga.childs[ind][j].pts[i-1]][ga.childs[ind][j].pts[i]] = &d
+				}
+				dist += d
+			} else {
+				dist += ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+			}
 		}
 		ga.childs[ind][j].dist = dist
 	}

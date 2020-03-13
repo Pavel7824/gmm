@@ -57,29 +57,30 @@ func (p Points) print() {
 }
 
 func main() {
+
 	rand.Seed(time.Now().UTC().UnixNano())
-	pts := make(Points, 20)
-	pts[0] = &point{ID: 1, X: 80, Y: 0}
+	pts := make(Points, 10)
+	pts[0] = &point{ID: 1, X: 10, Y: 0}
 	pts[1] = &point{ID: 2, X: 20, Y: 0}
 	pts[2] = &point{ID: 3, X: 30, Y: 0}
 	pts[3] = &point{ID: 4, X: 40, Y: 0}
 	pts[4] = &point{ID: 5, X: 50, Y: 0}
 	pts[5] = &point{ID: 6, X: 60, Y: 0}
 	pts[6] = &point{ID: 7, X: 70, Y: 0}
-	pts[7] = &point{ID: 8, X: 10, Y: 0}
+	pts[7] = &point{ID: 8, X: 80, Y: 0}
 	pts[8] = &point{ID: 9, X: 90, Y: 0}
 	pts[9] = &point{ID: 10, X: 100, Y: 0}
-	pts[10] = &point{ID: 11, X: 0, Y: 10}
-	pts[10] = &point{ID: 11, X: 0, Y: 10}
-	pts[11] = &point{ID: 12, X: 0, Y: 20}
-	pts[12] = &point{ID: 13, X: 0, Y: 30}
-	pts[13] = &point{ID: 14, X: 0, Y: 40}
-	pts[14] = &point{ID: 15, X: 0, Y: 50}
-	pts[15] = &point{ID: 16, X: 0, Y: 60}
-	pts[16] = &point{ID: 17, X: 0, Y: 70}
-	pts[17] = &point{ID: 18, X: 0, Y: 80}
-	pts[18] = &point{ID: 19, X: 0, Y: 90}
-	pts[19] = &point{ID: 20, X: 0, Y: 100}
+	// pts[10] = &point{ID: 11, X: 0, Y: 10}
+	// pts[10] = &point{ID: 11, X: 0, Y: 10}
+	// pts[11] = &point{ID: 12, X: 0, Y: 20}
+	// pts[12] = &point{ID: 13, X: 0, Y: 30}
+	// pts[13] = &point{ID: 14, X: 0, Y: 40}
+	// pts[14] = &point{ID: 15, X: 0, Y: 50}
+	// pts[15] = &point{ID: 16, X: 0, Y: 60}
+	// pts[16] = &point{ID: 17, X: 0, Y: 70}
+	// pts[17] = &point{ID: 18, X: 0, Y: 80}
+	// pts[18] = &point{ID: 19, X: 0, Y: 90}
+	// pts[19] = &point{ID: 20, X: 0, Y: 100}
 
 	mapVertex = make(map[int64]*point)
 	for _, p := range pts {
@@ -88,12 +89,17 @@ func main() {
 
 	parent := make([]gmm.Candidate, 1)
 	parent[0] = pts
+	ts := time.Now()
 	ga, err := gmm.NewGA(parent)
 	if err != nil {
 		fmt.Println(err)
 	}
 	ga.SetRepeat(10000)
+	ga.SaveDists(false)
+	fmt.Println("preproc", ts.Sub(time.Now()))
+	ts = time.Now()
 	rez := ga.Run()
+	fmt.Println("run", ts.Sub(time.Now()))
 
 	newPts := make(Points, len(rez))
 
