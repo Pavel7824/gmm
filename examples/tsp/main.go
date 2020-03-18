@@ -13,8 +13,9 @@ type point struct {
 	X, Y float64
 }
 
-func (a *point) distTo(b *point) float64 {
-	return math.Sqrt((a.X-b.X)*(a.X-b.X) + (a.Y-b.Y)*(a.Y-b.Y))
+func (a *point) distTo(b *point) *float64 {
+	d := math.Sqrt((a.X-b.X)*(a.X-b.X) + (a.Y-b.Y)*(a.Y-b.Y))
+	return &d
 }
 
 // Points ...
@@ -37,15 +38,18 @@ func (p Points) Points() []interface{} {
 var mapVertex map[int64]*point
 
 // Dist ...
-func (p Points) Dist(from, to int64) float64 {
+func (p Points) Dist(from, to int64) *float64 {
 	var froml, tol *point
 	if froml = mapVertex[from]; froml == nil {
 		fmt.Println("shit from")
-		return 0.0
+		return nil
 	}
 	if tol = mapVertex[to]; tol == nil {
 		fmt.Println("shit to")
-		return 0.0
+		return nil
+	}
+	if froml.ID == 10 && tol.ID == 9 {
+		return nil
 	}
 	return froml.distTo(tol)
 }

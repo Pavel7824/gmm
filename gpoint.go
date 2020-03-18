@@ -6,7 +6,7 @@ import (
 
 type gpoints struct {
 	count int
-	dist  float64
+	dist  *float64
 	pts   []interface{}
 }
 

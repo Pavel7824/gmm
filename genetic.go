@@ -9,7 +9,7 @@ import (
 type Candidate interface {
 	ID(index int) int64
 	Points() []interface{}
-	Dist(from, to int64) float64
+	Dist(from, to int64) *float64
 }
 
 // GA ...
@@ -42,6 +42,9 @@ func NewGA(c []Candidate) (ga *GA, err error) {
 	ga.parents = make([]*gpoints, len(c))
 	ga.mapping = make(map[interface{}]int64, len(c))
 	ga.candidates = c
+	if ga.saveDists {
+		ga.dists = make(map[interface{}]map[interface{}]*float64)
+	}
 	count := 0
 	for i := range ga.candidates {
 		ga.parents[i] = new(gpoints)
@@ -50,6 +53,9 @@ func NewGA(c []Candidate) (ga *GA, err error) {
 		copy(ga.parents[i].pts, ga.candidates[i].Points())
 		for ind, pl := range ga.parents[i].pts {
 			ga.mapping[pl] = ga.candidates[i].ID(ind)
+			if ga.saveDists {
+				ga.dists[pl] = make(map[interface{}]*float64)
+			}
 		}
 
 		if i == 0 {
@@ -63,6 +69,7 @@ func NewGA(c []Candidate) (ga *GA, err error) {
 				return &GA{}, errors.New("the number of points in the population does not match")
 			}
 		}
+
 		ga.parents[i].count = count
 		ga.calcDistParent(i)
 	}
@@ -115,7 +122,7 @@ func (ga *GA) Run() []interface{} {
 		rep := true
 		for i := range ga.parents {
 			for j := range ga.childs[i] {
-				if ga.parents[i].dist > ga.childs[i][j].dist {
+				if ga.childs[i][j].dist != nil && *ga.parents[i].dist > *ga.childs[i][j].dist {
 					ga.parents[i].count = ga.childs[i][j].count
 					ga.parents[i].dist = ga.childs[i][j].dist
 					copy(ga.parents[i].pts, ga.childs[i][j].pts)
@@ -134,7 +141,7 @@ func (ga *GA) Run() []interface{} {
 	}
 	rez := ga.parents[0]
 	for i := 1; i < ga.numPopulatuin; i++ {
-		if ga.parents[i].dist < rez.dist {
+		if ga.parents[i].dist != nil && *ga.parents[i].dist < *rez.dist {
 			rez = ga.parents[i]
 		}
 	}
@@ -150,23 +157,23 @@ func (ga *GA) calcDistParent(ind int) {
 				if l2 := l1[ga.parents[ind].pts[i]]; l2 != nil {
 					d = *l2
 				} else {
-					l1 = make(map[interface{}]*float64)
-					d = ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+					//l1 = make(map[interface{}]*float64)
+					d = *ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
 					ga.dists[ga.parents[ind].pts[i-1]][ga.parents[ind].pts[i]] = &d
 				}
 			} else {
-				ga.dists = make(map[interface{}]map[interface{}]*float64)
-				ga.dists[ga.parents[ind].pts[i-1]] = make(map[interface{}]*float64)
-				d = ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+				//ga.dists = make(map[interface{}]map[interface{}]*float64)
+				//	ga.dists[ga.parents[ind].pts[i-1]] = make(map[interface{}]*float64)
+				d = *ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
 				ga.dists[ga.parents[ind].pts[i-1]][ga.parents[ind].pts[i]] = &d
 			}
 			dist += d
 		} else {
-			dist += ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
+			dist += *ga.candidates[ind].Dist(ga.mapping[ga.parents[ind].pts[i-1]], ga.mapping[ga.parents[ind].pts[i]])
 		}
 
 	}
-	ga.parents[ind].dist = dist
+	ga.parents[ind].dist = &dist
 }
 func (ga *GA) calcDistChild(ind int) {
 	for j := range ga.childs[ind] {
@@ -179,21 +186,22 @@ func (ga *GA) calcDistChild(ind int) {
 						d = *l2
 					} else {
 						l1 = make(map[interface{}]*float64)
-						d = ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+						d = *ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
 						ga.dists[ga.childs[ind][j].pts[i-1]][ga.childs[ind][j].pts[i]] = &d
 					}
 				} else {
 					ga.dists = make(map[interface{}]map[interface{}]*float64)
 					ga.dists[ga.childs[ind][j].pts[i-1]] = make(map[interface{}]*float64)
-					d = ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+					d = *ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
 					ga.dists[ga.childs[ind][j].pts[i-1]][ga.childs[ind][j].pts[i]] = &d
 				}
 				dist += d
 			} else {
-				dist += ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
+				// if
+				dist += *ga.candidates[ind].Dist(ga.mapping[ga.childs[ind][j].pts[i-1]], ga.mapping[ga.childs[ind][j].pts[i]])
 			}
 		}
-		ga.childs[ind][j].dist = dist
+		ga.childs[ind][j].dist = &dist
 	}
 }
 
